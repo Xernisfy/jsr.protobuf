@@ -1,0 +1,11 @@
+{
+  "version": "4",
+  "specifiers": {
+    "jsr:@std/encoding@*": "1.0.6"
+  },
+  "jsr": {
+    "@std/encoding@1.0.6": {
+      "integrity": "ca87122c196e8831737d9547acf001766618e78cd8c33920776c7f5885546069"
+    }
+  }
+}
