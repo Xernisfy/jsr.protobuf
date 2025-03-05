@@ -1,7 +1,7 @@
 import { assertEquals } from "jsr:@std/assert@1.0.11/equals";
 import { assertObjectMatch } from "jsr:@std/assert@1.0.11/object-match";
 import { decodeBase64 } from "jsr:@std/encoding@1.0.6/base64";
-import Protobuf from "./mod.ts";
+import Protobuf, { type Message } from "./mod.ts";
 
 Deno.test("decode simple object", () => {
   const testMessageBinary = decodeBase64("CgR0ZXN0EgL/DxgCIgICBA==");
@@ -38,9 +38,9 @@ Deno.test("decode simple object", () => {
 
 Deno.test("decode complex object", () => {
   const testMessageBinary = decodeBase64(
-    "CgR0ZXN0EgL/DxgCIgICBCoICgZuZXN0ZWQ=",
+    "CgR0ZXN0EgL/DxgCIgICBCoICgZuZXN0ZWQwAQ==",
   );
-  const testMessageObject = [
+  const testMessageObject: Message = [
     {
       number: 1,
       type: 2,
@@ -55,7 +55,13 @@ Deno.test("decode complex object", () => {
       length: 4,
       payload: Uint8Array.from([255, 15]),
     },
-    { number: 3, type: 0, offset: 10, length: 2, payload: 2n },
+    {
+      number: 3,
+      type: 0,
+      offset: 10,
+      length: 2,
+      payload: 2n,
+    },
     {
       number: 4,
       type: 2,
@@ -69,6 +75,13 @@ Deno.test("decode complex object", () => {
       offset: 16,
       length: 10,
       payload: Uint8Array.from([10, 6, 110, 101, 115, 116, 101, 100]),
+    },
+    {
+      number: 6,
+      type: 0,
+      offset: 26,
+      length: 2,
+      payload: 1n,
     },
   ];
   const message = Protobuf.decodeMessage(testMessageBinary);
@@ -96,4 +109,45 @@ Deno.test("decode complex object", () => {
       testMessageNestedObject[fieldIndex],
     );
   }
+});
+
+Deno.test("parse definition", () => {
+  const testDefinition = `syntax = "proto3";
+
+message exampleMessage {
+  string exampleString = 1;
+  bytes exampleBytes = 2;
+  uint32 exampleInt = 3;
+  repeated uint32 exampleArray = 4;
+  nestedMessage exampleObject = 5;
+  exampleEnum exampleEnum = 6;
+}
+
+message nestedMessage {
+  string exampleString = 1;
+}
+
+enum exampleEnum {
+  A = 0;
+  B = 1;
+}`;
+  const testDefinitionObject = {
+    messages: {
+      exampleMessage: new Map([
+        [1, { type: "string", name: "exampleString" }],
+        [2, { type: "bytes", name: "exampleBytes" }],
+        [3, { type: "uint32", name: "exampleInt" }],
+        [4, { type: "repeated uint32", name: "exampleArray" }],
+        [5, { type: "nestedMessage", name: "exampleObject" }],
+        [6, { type: "exampleEnum", name: "exampleEnum" }],
+      ]),
+    },
+    enums: {
+      exampleEnum: new Map([[0, "A"], [1, "B"]]),
+    },
+  } as ReturnType<typeof Protobuf.parseDefinition>;
+  assertObjectMatch(
+    Protobuf.parseDefinition(testDefinition),
+    testDefinitionObject,
+  );
 });

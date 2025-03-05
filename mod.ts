@@ -1,6 +1,32 @@
 import { decodeVarint } from "jsr:@std/encoding@1.0.6/varint";
 
+/**
+ * This module contains functions to decode protobuf
+ *
+ * @example
+ * ```ts
+ * import Protobuf from "@xernisfy/protobuf";
+ *
+ * const message = Protobuf.decodeMessage(Uint8Array.from([10, 4, 116, 101, 115, 116, 18, 2, 255, 15, 24, 2, 34, 2, 2, 4]));
+ * ```
+ *
+ * @module
+ */
+
+export default {
+  decodeMessage,
+  parseDefinition,
+};
+
+/**
+ * List of all records/fields in the Protobuf message
+ */
 export type Message = Field[];
+/**
+ * Representation of a record/field
+ *
+ * Contains only information that is present in the Protobuf message, so e.g. field names are not included
+ */
 export type Field<T = WireType> = {
   type: T;
   number: number;
@@ -8,7 +34,10 @@ export type Field<T = WireType> = {
   length: number;
   payload: T extends WireType.VARINT ? bigint : Uint8Array;
 };
-// https://protobuf.dev/programming-guides/encoding/#structure
+/**
+ * Types used by Protobuf
+ * @see https://protobuf.dev/programming-guides/encoding/#structure
+ */
 enum WireType {
   VARINT,
   I64,
@@ -18,6 +47,9 @@ enum WireType {
   I32,
 }
 
+/**
+ * Helper class to iterate over bytes
+ */
 class Buffer {
   offset: number = 0;
   constructor(private buffer: Uint8Array) {}
@@ -36,10 +68,18 @@ class Buffer {
   }
 }
 
+/**
+ * Decode a Protobuf message from "wire format" to JSON
+ *
+ * Contains only information that is present in the Protobuf message, so e.g. field names are not included
+ */
 function decodeMessage(buffer: Uint8Array): Message {
   return [...decodeRecords(new Buffer(buffer))];
 }
 
+/**
+ * Helper function to iterate over Protobuf records/fields
+ */
 function* decodeRecords(b: Buffer): Generator<Field, void, unknown> {
   while (b.offset < b.length) {
     const offset = b.offset;
@@ -50,6 +90,9 @@ function* decodeRecords(b: Buffer): Generator<Field, void, unknown> {
   if (b.offset !== b.length) throw new Error(`invalid length`);
 }
 
+/**
+ * Helper function to retrieve the payload depending on the record/field type
+ */
 function getPayload(type: WireType, b: Buffer): Uint8Array | bigint {
   if (type === WireType.VARINT) return b.getVarint();
   if (type === WireType.I64) return b.slice(64);
@@ -60,6 +103,9 @@ function getPayload(type: WireType, b: Buffer): Uint8Array | bigint {
   throw new Error(`unknown type "${type}"`);
 }
 
+/**
+ * Helper function to split the tag into the field number and type
+ */
 function getTag(b: Buffer): Pick<Field, "number" | "type"> {
   const tag = Number(b.getVarint());
   return { number: tag >> 3, type: tag & 0b111 };
@@ -72,10 +118,16 @@ type MessageDefinitions = Record<
 type EnumDefinitions = Record<string, Map<number, string>>;
 
 const regexMessage = /message +(?<name>.*?) *{(?<content>[\s\S]*?)}/g;
-const regexMessageProp = / *(?<type>[^ ]+) (?<name>[^ ]+) = (?<number>\d+);\n/g;
+const regexMessageProp =
+  / *(?<type>(?:repeated )?[^ ]+) (?<name>[^ ]+) = (?<number>\d+);\n/g;
 const regexEnum = /enum +(?<name>.*?) *{(?<content>[\s\S]*?)}/g;
 const regexEnumProp = / *(?<name>[^ ]+) = (?<number>\d+);\n/g;
 
+/**
+ * Parse a Protobuf definition into a JSON representation
+ *
+ * The result can be used to hydrate a decoded Protobuf message
+ */
 function parseDefinition(
   protoDefinition: string,
 ): { messages: MessageDefinitions; enums: EnumDefinitions } {
@@ -108,8 +160,3 @@ function parseDefinition(
   );
   return { messages, enums };
 }
-
-export default {
-  decodeMessage,
-  parseDefinition,
-};
