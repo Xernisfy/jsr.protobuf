@@ -1,7 +1,7 @@
 import { decodeVarint } from "jsr:@std/encoding/varint";
 
-type Message = Field[];
-type Field<T = WireType> = {
+export type Message = Field[];
+export type Field<T = WireType> = {
   type: T;
   number: number;
   offset: number;
@@ -36,7 +36,7 @@ class Buffer {
   }
 }
 
-export function decodeMessage(buffer: Uint8Array): Message {
+function decodeMessage(buffer: Uint8Array): Message {
   return [...decodeRecords(new Buffer(buffer))];
 }
 
@@ -76,7 +76,7 @@ const regexMessageProp = / *(?<type>[^ ]+) (?<name>[^ ]+) = (?<number>\d+);\n/g;
 const regexEnum = /enum +(?<name>.*?) *{(?<content>[\s\S]*?)}/g;
 const regexEnumProp = / *(?<name>[^ ]+) = (?<number>\d+);\n/g;
 
-export function parseDefinition(
+function parseDefinition(
   protoDefinition: string,
 ): { messages: MessageDefinitions; enums: EnumDefinitions } {
   const messages = Object.fromEntries(
@@ -108,3 +108,8 @@ export function parseDefinition(
   );
   return { messages, enums };
 }
+
+export default {
+  decodeMessage,
+  parseDefinition,
+};
