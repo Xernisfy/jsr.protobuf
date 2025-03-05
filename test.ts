@@ -1,5 +1,6 @@
-import { assertEquals, assertObjectMatch } from "jsr:@std/assert";
-import { decodeBase64 } from "jsr:@std/encoding/base64";
+import { assertEquals } from "jsr:@std/assert@1.0.11/equals";
+import { assertObjectMatch } from "jsr:@std/assert@1.0.11/object-match";
+import { decodeBase64 } from "jsr:@std/encoding@1.0.6/base64";
 import Protobuf from "./mod.ts";
 
 Deno.test("decode simple object", () => {
@@ -75,6 +76,7 @@ Deno.test("decode complex object", () => {
   for (const fieldIndex in testMessageObject) {
     assertObjectMatch(message[fieldIndex], testMessageObject[fieldIndex]);
   }
+  // test nested object as well
   const testMessageNestedObject = [
     {
       number: 1,

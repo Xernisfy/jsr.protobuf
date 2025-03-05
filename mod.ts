@@ -1,4 +1,4 @@
-import { decodeVarint } from "jsr:@std/encoding/varint";
+import { decodeVarint } from "jsr:@std/encoding@1.0.6/varint";
 
 export type Message = Field[];
 export type Field<T = WireType> = {
